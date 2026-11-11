@@ -7,6 +7,11 @@
 <p align="center">驴拉磨 · 一个会跟着模型吐字速度转圈圈的 DSH Web UI 背景插件<br>
 A donkey treadmill background for DeepSeek Harness whose pace tracks the model's live token throughput.</p>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/dsh-donkey-mill"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-donkey-mill"></a>
+  <a href="./LICENSE"><img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
+
 ---
 
 ## 中文
@@ -25,6 +30,14 @@ A donkey treadmill background for DeepSeek Harness whose pace tracks the model's
 所有设置写入 `localStorage`，刷新页面后保留，不需要改配置或重启宿主。
 
 ### 安装
+
+**从 npm 安装（推荐，预构建包无需构建授权）：**
+
+```sh
+dsh plugin --profile web add dsh-donkey-mill
+```
+
+**或直接从 GitHub 安装：**
 
 ```sh
 # 1. 从 GitHub 安装到你的 profile（示例用 web）
@@ -115,6 +128,14 @@ A collapsible control panel in the bottom-right corner switches the form, adjust
 background. Settings persist in `localStorage`; no config edit or host restart required.
 
 ### Install
+
+**From npm (recommended — prebuilt package, no build approval):**
+
+```sh
+dsh plugin --profile web add dsh-donkey-mill
+```
+
+**Or straight from GitHub:**
 
 ```sh
 # 1. Install from GitHub into your profile (web shown as an example)
