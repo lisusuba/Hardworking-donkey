@@ -24,10 +24,9 @@ A donkey treadmill background for DeepSeek Harness whose pace tracks the model's
 两种形态，随时切换：
 
 - **文字** — 中央一个大字「磨」，左侧一个字「驴」沿圆轨公转，磨盘同步自转（楷体优先，安静的水墨感）。
-- <img width="1136" height="720" alt="image" src="https://github.com/user-attachments/assets/d619bc29-d996-444d-8796-96621d4e0c05" />
+- <img width="1136" height="720" alt="文字形态" src="https://github.com/user-attachments/assets/d619bc29-d996-444d-8796-96621d4e0c05" />
 - **动画** — 俯视卡通驴拉磨：四蹄摆动、尾巴拍打、扬起尘土，磨盘随行走进度自转。
-- <img width="1214" height="729" alt="image" src="https://github.com/user-attachments/assets/963d6b9f-bb25-498f-aecb-d3ad18a81a4b" />
-
+- <img width="1214" height="729" alt="动画形态" src="https://github.com/user-attachments/assets/963d6b9f-bb25-498f-aecb-d3ad18a81a4b" />
 
 页面右下角有一个可折叠的控制面板，可以即时切换形态、调节透明度、隐藏整个背景；
 所有设置写入 `localStorage`，刷新页面后保留，不需要改配置或重启宿主。
