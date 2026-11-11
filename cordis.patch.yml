@@ -1,0 +1,12 @@
+- insert:
+    - id: donkey-mill
+      name: 'dsh-donkey-mill'
+      config:
+        enabled: true
+        # 形态：animated = 俯视动画驴拉磨；text = 汉字（磨/驴）沿同一圆轨转动
+        mode: text
+        # 场景缩放：160..720 → 0.5..1.0（轨道占视口短边的 50%-100%）
+        size: 380
+        # 水印不透明度：0.05..1 → alpha 0.04..0.32
+        opacity: 0.55
+        showReadout: true

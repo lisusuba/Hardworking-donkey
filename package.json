@@ -1,0 +1,51 @@
+{
+  "name": "dsh-donkey-mill",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A donkey treadmill background for the DSH Web UI: a top-down donkey pulls the millstone at a pace driven by the model's live token throughput.",
+  "icon": "./icon.svg",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "locale/*.json"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "web-ui",
+    "decoration",
+    "background",
+    "donkey",
+    "token-throughput"
+  ],
+  "license": "MIT",
+  "author": "lisusuba",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lisusuba/Hardworking-donkey.git"
+  },
+  "homepage": "https://github.com/lisusuba/Hardworking-donkey#readme",
+  "bugs": {
+    "url": "https://github.com/lisusuba/Hardworking-donkey/issues"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-layout"]
+    }
+  }
+}

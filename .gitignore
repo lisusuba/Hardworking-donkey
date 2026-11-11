@@ -1,0 +1,12 @@
+# dependencies
+node_modules/
+
+# local work notes and logs (not part of the published plugin)
+RESTART-NOTE.md
+*.log
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
