@@ -19,7 +19,7 @@ A donkey treadmill background for DeepSeek Harness whose pace tracks the model's
 ### 这是什么
 
 `dsh-donkey-mill` 把 DSH Web UI 的背景换成一台「驴拉磨」：一头俯视角度的驴绕着圆形磨盘行走，
-模型流式吐字越快，驴和磨盘转得越快；模型空闲时也保持缓慢踱步，不会停死。
+模型流式吐字越快，驴和磨盘转得越快；一旦所有会话都停止生成（空闲），驴会减速并停住，不再空转。
 
 两种形态，随时切换：
 
@@ -86,7 +86,7 @@ dsh plugin --profile web remove dsh-donkey-mill
   通过精确路由 `GET /api/donkey-mill/rate` 暴露 `{"rate": <tok/s>, "active": <bool>}`。
 - **Web 半边** (`client.js`)：注册在 `shell.overlay` 槽（`order: -100`，点击穿透），
   每 300ms 轮询速率路由，用 rAF 在单个 SVG 上直接写属性；两种形态共用同一套运动学
-  （空闲保底角速度 + tok/s 加速）。零运行时依赖，不需要构建。
+  （仅在 `active` 为真时给一个保底角速度，叠加 tok/s 加速；`active` 持续为假超过桥接窗后即停住）。零运行时依赖，不需要构建。
 
 ### 兼容性
 
@@ -117,7 +117,7 @@ locale/{en,zh}.json # 插件显示名与描述
 
 `dsh-donkey-mill` replaces the DSH Web UI background with a "donkey pulling the millstone" scene:
 a top-down donkey walks a circular track, and the faster the model streams tokens, the faster the
-donkey and millstone spin. When the model is idle it keeps plodding slowly instead of freezing.
+donkey and millstone spin. When every session stops generating, the donkey eases to a stop instead of idling forever.
 
 Two forms, switchable live:
 

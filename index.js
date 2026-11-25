@@ -234,9 +234,12 @@ export function apply(ctx, _config) {
         const idle = (now - lastActivityAt) / 1000;
         if (idle > PAUSE_GRACE) rate = best * Math.exp(-(idle - PAUSE_GRACE) / 1000 / PAUSE_TAU);
       }
-    } else if (lastActivityAt > 0) {
-      rate = endedRate * Math.exp(-(now - lastActivityAt) / 1000 / IDLE_TAU);
     } else {
+      // Every session has stopped (no in-flight attempt). Do NOT bleed out a
+      // decaying `endedRate` here: that is a stale memory of the last turn, not
+      // live generation, and it would make the client (and the donkey) keep
+      // moving for seconds after everything finished. The honest "is anything
+      // generating" signal is `active` (= attempts.size > 0) right below.
       rate = 0;
     }
 

@@ -30,9 +30,14 @@ window.__ModuleLoader__.load({
     const POLL_MS = 300;
     const FULL_SPEED_TPS = 120; // tok/s at which the donkey gallops flat out
     const ORBIT_RAD_S = 1.5; // extra angular speed at full tok/s
-    const IDLE_ORBIT_RAD_S = 0.35; // slow plod even when the model is idle
+    const IDLE_ORBIT_RAD_S = 0.35; // slow plod while the model has recently streamed
     const GAIT_FACTOR = 2.4;
     const EASE_TAU = 0.35;
+    // Short bridge so the donkey keeps a slow plod across the quiet gaps that
+    // are part of ONE turn (tool execution, reasoning/thinking, inter-attempt
+    // lulls) but DOES stop once no tokens have arrived for this whole window —
+    // i.e. every session has truly finished.
+    const PLOD_BRIDGE_MS = 4000;
 
     const CX = 500;
     const CY = 500;
@@ -76,14 +81,21 @@ window.__ModuleLoader__.load({
     // --------------------------------------------------------------- motion
 
     // Shared animation clock. Polls the host tok/s route, eases the rate, and
-    // advances ONE orbital angle theta every frame. The idle floor keeps the
-    // scene moving whenever the model is not streaming; tok/s only adds speed.
+    // advances ONE orbital angle theta every frame. While tokens are flowing the
+    // donkey speeds up; between chunks (and across tool-call / reasoning lulls
+    // within the same turn) it keeps a slow idle plod for up to PLOD_BRIDGE_MS.
+    // The idle plod is gated on the host `active` flag (= an attempt is in flight
+    // with recent chunk activity), which is the honest "is generation happening"
+    // signal; the host `rate` can still bleed out as a decaying memory of the
+    // previous turn, so we do NOT drive motion off it. Once `active` has stayed
+    // false for that whole window (every session stopped) the floor is dropped
+    // and the donkey eases to a full stop.
     // onFrame(st, now) is called once on mount (initial pose) and every frame;
     // it writes SVG attributes directly, so React never re-renders per frame.
-    // st = { target, rate, speed, angle, gait, lastT, lastTps }.
     function useMillClock(onFrame) {
       const stRef = React.useRef({
-        target: 0, rate: 0, speed: 0, angle: Math.PI, gait: 0, lastT: 0, lastTps: -1
+        target: 0, rate: 0, speed: 0, angle: Math.PI, gait: 0, lastT: 0, lastTps: -1,
+        lastActiveAt: 0, moving: 0
       });
       const frameRef = React.useRef(onFrame);
       frameRef.current = onFrame;
@@ -93,18 +105,35 @@ window.__ModuleLoader__.load({
         let stopped = false;
         const poll = async () => {
           if (stopped) return;
-          let t = 0;
           try {
             const res = await fetch(RATE_URL, { cache: 'no-store' });
             if (res.ok) {
               const data = await res.json();
+              const activeNow = !!(data && data.active);
+              // The host `active` flag (= an attempt is in flight with recent
+              // token activity) is the honest "is anything generating" signal.
+              // The host `rate` ALSO bleeds out as a decaying memory of the
+              // previous turn (readRate's endedRate tail), so we must NOT feed
+              // the tok/s speed from `rate` unless `active` is true — otherwise
+              // the donkey keeps spinning for seconds after every turn ends.
               const r = Number(data && data.rate);
-              if (Number.isFinite(r) && r > 0) t = r;
+              stRef.current.target = activeNow && Number.isFinite(r) && r > 0 ? r : 0;
+              stRef.current.active = activeNow;
+              // CRITICAL: lastActiveAt is compared against the rAF callback's
+              // `now` (a DOMHighResTimeStamp, i.e. ms since the time origin) in
+              // tick(). It MUST be stamped on that same clock. Using Date.now()
+              // (ms since the Unix epoch) makes `now - lastActiveAt` a huge
+              // negative number, so `plodding` stays true forever and the
+              // donkey never stops. performance.now() shares rAF's time origin.
+              if (activeNow) stRef.current.lastActiveAt = performance.now();
+            } else {
+              stRef.current.target = 0;
+              stRef.current.active = false;
             }
           } catch {
-            t = 0;
+            stRef.current.target = 0;
+            stRef.current.active = false;
           }
-          stRef.current.target = t;
         };
         poll();
         timer = window.setInterval(poll, POLL_MS);
@@ -127,9 +156,26 @@ window.__ModuleLoader__.load({
           st.rate += k * (st.target - st.rate);
           if (st.rate < 0.01) st.rate = 0;
           st.speed = st.rate > 0 ? Math.sqrt(Math.min(st.rate / FULL_SPEED_TPS, 1)) : 0;
-          const orbit = IDLE_ORBIT_RAD_S + st.speed * ORBIT_RAD_S;
+          // `plodding` is true only while generation was active within the linger
+          // window — i.e. a turn is still alive across its quiet gaps (tool call,
+          // reasoning, sub-second lull). Measured from the LAST active poll, so a
+          // brief gap doesn't reset the grace. Once `active` has stayed false for
+          // PLOD_BRIDGE_MS (every session stopped) the floor is dropped and the
+          // donkey eases to a full stop instead of plodding forever.
+          // Guard the lower bound too: a timestamp from a different clock (or a
+          // future value) yields a negative idle, which must NOT count as
+          // "recently active". Only a positive elapsed within the bridge window
+          // keeps the idle plod alive.
+          const idleSinceActive = now - st.lastActiveAt;
+          const plodding = st.lastActiveAt > 0 && idleSinceActive >= 0 && idleSinceActive <= PLOD_BRIDGE_MS;
+          const base = plodding ? IDLE_ORBIT_RAD_S : 0;
+          const orbit = base + st.speed * ORBIT_RAD_S;
           st.angle = (st.angle + orbit * dt) % (Math.PI * 2);
           st.gait += orbit * dt * GAIT_FACTOR;
+          // Smooth motion level: 1 while moving, 0 once stopped. Gates the tiny
+          // idle breathing / tail-sway so the donkey is truly still when every
+          // session has stopped.
+          st.moving = Math.min(1, orbit / IDLE_ORBIT_RAD_S);
           frameRef.current(st, now);
         };
         raf = window.requestAnimationFrame(tick);
@@ -307,9 +353,9 @@ window.__ModuleLoader__.load({
           const s = Math.sin(st.gait + phase) * amp;
           el.setAttribute('transform', 'translate(0 ' + s.toFixed(2) + ')');
         }
-        const sway = Math.sin(st.gait * 0.7 + now / 900) * (5 + 11 * speed);
+        const sway = Math.sin(st.gait * 0.7 + now / 900) * (5 + 11 * speed) * st.moving;
         for (const el of parts.tail) el.setAttribute('transform', 'rotate(' + sway.toFixed(2) + ' 0 52)');
-        const breathe = 1 + 0.02 * Math.sin(now / 850);
+        const breathe = 1 + 0.02 * Math.sin(now / 850) * st.moving;
         for (const el of parts.body) el.setAttribute('transform', 'scale(' + breathe.toFixed(4) + ')');
         const dustOpacity = (speed * 0.4).toFixed(3);
         for (const el of parts.dust) el.setAttribute('opacity', dustOpacity);
